@@ -1,6 +1,6 @@
 #include <iostream> 
 
-#include "avl_tree/avl_tree.h"
+#include "avl_tree.h"
 
 using namespace std;
 
