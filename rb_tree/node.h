@@ -19,7 +19,4 @@ struct node {
     // filho esquerdo, direito e o pai
     node(type k, bool c, node *l, node *r, node *p)
         : key(k), color(c), left(l), right(r), parent(p) {}
-
-    // Destrutor que imprime uma mensagem quando um nó é deletado
-    ~node() {}
 };

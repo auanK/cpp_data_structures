@@ -59,6 +59,14 @@ class red_black_tree {
         x->parent = y;
     }
 
+    void clear(node<type> *n) {
+        if (n != _nil) {
+            clear(n->left);
+            clear(n->right);
+            delete n;
+        }
+    }
+
     // Encontra o nó com o menor valor na subárvore com raiz x
     node<type> *minimum(node<type> *x) {
         while (x->left != _nil) {
@@ -260,6 +268,14 @@ class red_black_tree {
         _root = _nil = new node<type>(0, BLACK, nullptr, nullptr, nullptr);
         _nil->left = _nil->right = _nil->parent = _nil;
     }
+
+    // Destrutor que libera a memória alocada para os nós da árvore
+    ~red_black_tree() {
+        clear(_root);
+        delete _nil;
+    }
+
+    void clear() { clear(_root); }
 
     // Insere um novo valor na árvore
     void insert(type value) {
