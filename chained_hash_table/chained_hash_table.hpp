@@ -62,42 +62,6 @@ class hash_table {
     // Calcula o índice da tabela hash para uma chave k
     size_t hash_code(const key& k) const { return _hashing(k) % _table_size; }
 
-    // Método auxiliar para encontrar um elemento na tabela hash
-    typename std::list<std::pair<key, value>>::iterator find_element(
-        const key& k) {
-        // Obtém o índice da tabela para a chave k
-        size_t i = hash_code(k);
-
-        // Procura pela chave k na lista do slot correspondente
-        auto& bucket = (*_table)[i];
-        for (auto it = bucket.begin(); it != bucket.end(); ++it) {
-            if (it->first == k) {
-                return it;  // Retorna um iterador para o elemento
-            }
-        }
-
-        // Se a chave não foi encontrada, retorna um iterador para o final
-        return bucket.end();
-    }
-
-    // Método auxiliar para encontrar um elemento na tabela hash (Versão const)
-    typename std::list<std::pair<key, value>>::const_iterator find_element(
-        const key& k) const {
-        // Obtém o índice da tabela para a chave k
-        size_t i = hash_code(k);
-
-        // Procura pela chave k na lista do slot correspondente
-        const auto& bucket = (*_table)[i];
-        for (auto it = bucket.begin(); it != bucket.end(); ++it) {
-            if (it->first == k) {
-                return it;  // Retorna um iterador para o elemento
-            }
-        }
-
-        // Se a chave não foi encontrada, retorna um iterador para o final
-        return bucket.end();
-    }
-
    public:
     // Construtor padrão da tabela hash com tamanho inicial e função de hash
     hash_table(size_t table_size = 19, const hash& hf = hash())
@@ -204,40 +168,52 @@ class hash_table {
             rehash(2 * _table_size);
         }
 
-        // Usa o método find_element para procurar a chave
-        auto it = find_element(k);
+        // Cálcula o índice da tabela hash para a chave k
+        size_t i = hash_code(k);
 
-        // Se o iterador não estiver no final, a chave já existe
-        if (it != (*_table)[hash_code(k)].end()) {
-            return false;
+        // Itera para encontrar a chave k na tabela hash
+        for (const auto& p : (*_table)[i]) {
+            // Se a chave k foi encontrada, não insere a chave novamente
+            if (p.first == k) {
+                return false;
+            }
         }
 
-        // Adiciona a chave e o valor no slot correspondente
-        (*_table)[hash_code(k)].push_back(std::make_pair(k, v));
-        _number_of_elements++;
-        return true;  // A chave foi adicionada, retorna true
+        // Insere a chave k com o valor associado na tabela hash
+        (*_table)[i].push_back(std::make_pair(k, v));
+        _number_of_elements++;  // Incrementa o número de elementos
+        return true;            // A chave foi inserida
     }
 
     // Verifica se a chave k está na tabela hash
     bool contains(const key& k) const {
-        // Itera para encontrar a chave k na tabela hash
-        auto it = find_element(k);
+        // Cálcula o índice da tabela hash para a chave k
+        size_t i = hash_code(k);
 
-        // Se o iterador for diferente do final, a chave foi encontrada
-        return it != (*_table)[hash_code(k)].end();
+        // Itera para encontrar a chave k na tabela hash
+        for (const auto& p : (*_table)[i]) {
+            // Se a chave k foi encontrada, retorna true
+            if (p.first == k) {
+                return true;
+            }
+        }
+
+        return false;  // A chave não foi encontrada
     }
 
     // Remove a chave k da tabela hash
     bool remove(const key& k) {
-        // Usa o método find_element para procurar a chave
+        // Cálcula o índice da tabela hash para a chave k
         size_t i = hash_code(k);
-        auto it = find_element(k);
 
-        // Se o iterador não estiver no final, remove o par chave-valor
-        if (it != (*_table)[i].end()) {
-            (*_table)[i].erase(it);
-            _number_of_elements--;
-            return true;  // A chave foi removida
+        // Itera para encontrar a chave k na tabela hash
+        for (auto it = (*_table)[i].begin(); it != (*_table)[i].end(); it++) {
+            // Se a chave k foi encontrada, remove o par chave-valor
+            if (it->first == k) {
+                (*_table)[i].erase(it);  // Remove a chave do slot
+                _number_of_elements--;   // Decrementa o número de elementos
+                return true;             // A chave foi removida
+            }
         }
 
         return false;  // A chave não foi encontrada
@@ -245,12 +221,15 @@ class hash_table {
 
     // Retorna o valor associado à chave k
     value& at(const key& k) {
-        // Itera para encontrar a chave k na tabela hash
-        auto it = find_element(k);
+        // Cálcula o índice da tabela hash para a chave k
+        size_t i = hash_code(k);
 
-        // Se o iterador for diferente do final, a chave foi encontrada
-        if (it != (*_table)[hash_code(k)].end()) {
-            return it->second;
+        // Itera para encontrar a chave k na tabela hash
+        for (auto& p : (*_table)[i]) {
+            // Se a chave k foi encontrada, retorna o valor associado
+            if (p.first == k) {
+                return p.second;
+            }
         }
 
         // Se a chave não foi encontrada, lança uma exceção
@@ -259,12 +238,15 @@ class hash_table {
 
     // Retorna o valor associado à chave k (Versão const)
     const value& at(const key& k) const {
-        // Itera para encontrar a chave k na tabela hash
-        auto it = find_element(k);
+        // Cálcula o índice da tabela hash para a chave k
+        size_t i = hash_code(k);
 
-        // Se o iterador for diferente do final, a chave foi encontrada
-        if (it != (*_table)[hash_code(k)].end()) {
-            return it->second;
+        // Itera para encontrar a chave k na tabela hash
+        for (const auto& p : (*_table)[i]) {
+            // Se a chave k foi encontrada, retorna o valor associado
+            if (p.first == k) {
+                return p.second;
+            }
         }
 
         // Se a chave não foi encontrada, lança uma exceção
@@ -274,18 +256,21 @@ class hash_table {
     // Sobrecarga do operador de indexação para acessar ou modificar o valor da
     // chave k
     value& operator[](const key& k) {
-        // Itera para encontrar a chave k na tabela hash
-        auto it = find_element(k);
+        // Cálcula o índice da tabela hash para a chave k
+        size_t i = hash_code(k);
 
-        // Se o iterador for diferente do final, a chave foi encontrada
-        if (it != (*_table)[hash_code(k)].end()) {
-            return it->second;
+        // Itera para encontrar a chave k na tabela hash
+        for (auto& p : (*_table)[i]) {
+            // Se a chave k foi encontrada, retorna o valor associado
+            if (p.first == k) {
+                return p.second;
+            }
         }
 
-        // Se a chave não foi encontrada, insere a chave com um valor padrão
-        (*_table)[hash_code(k)].emplace_back(k, value());
+        // Se a chave k não foi encontrada, insere a chave com um valor padrão
+        (*_table)[i].push_back(std::make_pair(k, value()));
         _number_of_elements++;
-        return (*_table)[hash_code(k)].back().second;
+        return (*_table)[i].back().second;
     }
 
     // Sobrecarga do operador de indexação para acessar o valor associado à
@@ -322,115 +307,79 @@ class hash_table {
     // Classe iterador para a tabela hash
     class iterator {
        private:
-        size_t _index;             // Índice atual do slot na tabela
+        size_t _index;             // Índice do slot atual
         const hash_table* _table;  // Ponteiro para a tabela hash
 
         // Iterador para a lista de pares chave-valor no slot atual
-        typename std::list<std::pair<key, value>>::const_iterator _it;
+        typename std::list<std::pair<key, value>>::iterator _it;
 
-        // Avança para o próximo slot não vazio
-        void advance_to_next_nonempty() {
-            // Procura por um slot não vazio
+        void advance_to_next_noempty() {
+            // Avança para o próximo slot não vazio
             while (_index < _table->_table_size &&
                    (*_table->_table)[_index].empty()) {
                 ++_index;
             }
 
-            // Se encontrou um slot não vazio, atualiza o iterador
+            // Se o ĩndice for menor que o tamanho da tabela, obtém o iterador
+            // se não, cria um iterador vazio
             if (_index < _table->_table_size) {
                 _it = (*_table->_table)[_index].begin();
+            } else {
+                _it = typename std::list<std::pair<key, value>>::iterator();
             }
         }
 
        public:
         // Construtor do iterador
-        iterator(size_t index, const hash_table* table,
-                 typename std::list<std::pair<key, value>>::const_iterator it)
-            : _index(index), _table(table), _it(it) {
-            advance_to_next_nonempty();
+        iterator(size_t index, const hash_table* table)
+            : _index(index), _table(table) {
+            if (_index < _table->_table_size) {
+                _it = (*_table->_table)[_index].begin();
+                advance_to_next_noempty();
+            }
         }
 
-        // Sobrecarga do operador de pré-incremento (++it)
+        // Sobrerrega do operador de pré-incremento
         iterator& operator++() {
-            // Se o índice estiver além do tamanho da tabela, não faz nada
             if (_index >= _table->_table_size) {
                 return *this;
             }
 
-            // Avança o iterador
+            // Avança para o próximo elemento na lista
             ++_it;
 
-            // Se chegou ao final da lista no slot atual
-            // Avança para o próximo slot não vazio
+            // Se o iterador chegou ao final da lista, avança para o próximo
+            // slot não vazio
             if (_it == (*_table->_table)[_index].end()) {
                 ++_index;
-                advance_to_next_nonempty();
+                advance_to_next_noempty();
             }
+
             return *this;
         }
 
-        // Sobrecarga do operador de desigualdade
-        bool operator!=(const iterator& other) const {
-            // Se os índices forem diferentes, os iteradores são diferentes
-            if (_index != other._index) {
-                return true;
-            }
-
-            // Se chegou ao final da tabela, os iteradores são iguais
-            if (_index == _table->_table_size) {
-                return false;
-            }
-
-            // Retorna true se os iteradores forem diferentes
-            return _it != other._it;
+        // Sobrecarga do operador de pós-incremento
+        iterator operator++(int) {
+            iterator it = *this;
+            ++(*this);
+            return it;
         }
 
-        // Sobrecarga do operador de desreferenciação
-        const std::pair<key, value>& operator*() const { return *_it; }
+        // Sobrecarga do operador de diferença
+        bool operator!=(const iterator& it) const {
+            return _index != it._index || _it != it._it;
+        }
 
-        // Sobrecarga do operador de acesso a membros
-        const std::pair<key, value>* operator->() const { return &(*_it); }
+        // Sobrecarga do operador de indireção
+        std::pair<key, value>& operator*() { return *_it; }
+
+        // Sobrecarga do operador de seta
+        std::pair<key, value>* operator->() { return &(*_it); }
     };
 
-   private:
-    // Método auxiliar para encontrar o primeiro slot não vazio
-    iterator find_first_nonempty_bucket() const {
-        // Procura por um slot não vazio
-        size_t index = 0;
-        while (index < _table_size && (*_table)[index].empty()) {
-            ++index;
-        }
+    // Retorna um iterador para o início da tabela hash
+    iterator begin() const { return iterator(0, this); }
 
-        // Se o index for menor que o tamanho da tabela, encontrou um slot
-        // não vazio, retorna um iterador para o elemento
-        if (index < _table_size) {
-            return iterator(index, this, (*_table)[index].begin());
-        }
-
-        // Se não encontrou um slot não vazio, retorna um iterador para o final
-        return end();
-    }
-
-   public:
-    // Retorna um iterador para o primeiro elemento da tabela hash
-    iterator begin() { return find_first_nonempty_bucket(); }
-
-    // Retorna um iterador para o último elemento da tabela hash
-    iterator end() {
-        return iterator(
-            _table_size, this,
-            typename std::list<std::pair<key, value>>::const_iterator());
-    }
-
-    // Retorna um iterador constante para o primeiro elemento da tabela hash
-    // (Versão const)
-    iterator begin() const { return find_first_nonempty_bucket(); }
-
-    // Retorna um iterador constante para o último elemento da tabela hash
-    // (Versão const)
-    iterator end() const {
-        return iterator(
-            _table_size, this,
-            typename std::list<std::pair<key, value>>::const_iterator());
-    }
+    // Retorna um iterador para o final da tabela hash
+    iterator end() const { return iterator(_table_size, this); }
 };
